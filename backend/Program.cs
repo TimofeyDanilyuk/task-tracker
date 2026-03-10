@@ -4,7 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using backend.Data;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);пше
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
