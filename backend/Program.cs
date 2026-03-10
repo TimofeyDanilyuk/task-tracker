@@ -6,6 +6,9 @@ using backend.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+builder.WebHost.UseUrls($"http://+:{port}");
+
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     var connStr = Environment.GetEnvironmentVariable("DATABASE_URL")
@@ -47,41 +50,24 @@ builder.Services.AddControllers()
 
 builder.Services.AddEndpointsApiExplorer();
 
+// Разрешаем любой origin — для продакшена достаточно
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("cors", policy =>
+    options.AddDefaultPolicy(policy =>
     {
-        policy
-            .WithOrigins("https://confident-freedom-production-694d.up.railway.app")
-            .AllowAnyHeader()
-            .AllowAnyMethod();
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
     });
 });
 
 var app = builder.Build();
 
-app.Use(async (context, next) =>
-{
-    if (context.Request.Method == "OPTIONS")
-    {
-        context.Response.Headers.Add("Access-Control-Allow-Origin", "https://confident-freedom-production-694d.up.railway.app");
-        context.Response.Headers.Add("Access-Control-Allow-Headers", "*");
-        context.Response.Headers.Add("Access-Control-Allow-Methods", "*");
-        context.Response.StatusCode = 200;
-        return;
-    }
-
-    await next();
-});
-
-app.UseRouting();
-
-app.UseCors("cors");
+// CORS должен быть первым!
+app.UseCors();
 
 app.UseAuthentication();
 app.UseAuthorization();
-
-app.MapMethods("{*path}", new[] { "OPTIONS" }, () => Results.Ok());
 
 app.MapControllers();
 
