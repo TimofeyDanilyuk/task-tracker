@@ -1,0 +1,11 @@
+# NuGet
+**/obj/
+**/bin/
+*.user
+.vs/
+backend/obj/
+backend/bin/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
