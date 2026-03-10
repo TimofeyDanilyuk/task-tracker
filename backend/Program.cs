@@ -6,9 +6,6 @@ using backend.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-builder.WebHost.UseUrls($"http://+:{port}");
-
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     var connStr = Environment.GetEnvironmentVariable("DATABASE_URL")
