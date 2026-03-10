@@ -70,6 +70,8 @@ app.UseCors("cors");
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapMethods("{*path}", new[] { "OPTIONS" }, () => Results.Ok());
+
 app.MapControllers();
 
 using (var scope = app.Services.CreateScope())
