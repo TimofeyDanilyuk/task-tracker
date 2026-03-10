@@ -52,9 +52,12 @@ builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(policy =>
+    options.AddPolicy("cors", policy =>
     {
-        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+        policy
+            .WithOrigins("https://confident-freedom-production-694d.up.railway.app")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
     });
 });
 
@@ -62,7 +65,7 @@ var app = builder.Build();
 
 app.UseRouting();
 
-app.UseCors();
+app.UseCors("cors");
 
 app.UseAuthentication();
 app.UseAuthorization();
