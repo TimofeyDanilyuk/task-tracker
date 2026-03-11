@@ -78,6 +78,7 @@
                 <span class="subtask-priority-dot" :style="`background:${getPriorityColor(sub.priority)}`"></span>
                 <div>
                   <p class="subtask-title">{{ sub.title }}</p>
+                  <p class="subtask-date">{{ formatDate(sub.createdAt) }}</p>
                   <p v-if="sub.description" class="subtask-desc">{{ sub.description }}</p>
                 </div>
               </div>
@@ -117,6 +118,45 @@
               @keyup.enter="addComment"
             />
             <button class="btn btn-primary" @click="addComment">Отправить</button>
+          </div>
+        </div>
+
+        <!-- Связанные задачи -->
+        <div class="section">
+          <div class="section-header">
+            <h3>Связанные задачи <span class="count-badge">{{ linkedTasks.length }}</span></h3>
+            <button class="btn btn-ghost sm" @click="openLinkModal">+ Связать</button>
+          </div>
+
+          <div class="linked-list">
+            <div
+              v-for="link in linkedTasks"
+              :key="link.id"
+              class="linked-row"
+              @click="router.push(`/task/${link.task.id}`)"
+            >
+              <div class="linked-left">
+                <span
+                  class="priority-badge sm"
+                  :style="`background:${getPriorityColor(link.task.priority)}22;color:${getPriorityColor(link.task.priority)}`"
+                >
+                  {{ getPriorityLabel(link.task.priority) }}
+                </span>
+                <span class="linked-id">#{{ link.task.id }}</span>
+                <span class="linked-title">{{ link.task.title }}</span>
+              </div>
+              <div class="linked-right">
+                <span
+                  v-if="link.task.stage"
+                  class="stage-pill"
+                  :style="`background:${link.task.stage.color}22;color:${link.task.stage.color};border-color:${link.task.stage.color}44`"
+                >
+                  {{ link.task.stage.name }}
+                </span>
+                <button class="icon-btn danger" @click.stop="removeLink(link.task.id)">✕</button>
+              </div>
+            </div>
+            <div v-if="linkedTasks.length === 0" class="empty-sub">Нет связанных задач</div>
           </div>
         </div>
       </div>
@@ -224,6 +264,53 @@
         </div>
       </div>
     </div>
+
+    <!-- Модалка: связать задачи -->
+    <div class="modal-overlay" v-if="showLinkModal" @click.self="showLinkModal = false">
+      <div class="modal modal-lg">
+        <div class="modal-header">
+          <h2>Связать задачи</h2>
+          <button class="btn btn-ghost" @click="showLinkModal = false">✕</button>
+        </div>
+
+        <div class="link-tasks-list">
+          <div v-if="!allTasks.length" class="empty-sub">Нет доступных задач</div>
+          <div
+            v-for="t in allTasks"
+            :key="t.id"
+            class="link-task-row"
+            :class="{ selected: selectedLinks.includes(t.id) }"
+            @click="toggleLink(t.id)"
+          >
+            <div class="checkbox" :class="{ checked: selectedLinks.includes(t.id) }">
+              <svg v-if="selectedLinks.includes(t.id)" viewBox="0 0 12 12" fill="none">
+                <path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <span class="linked-id">#{{ t.id }}</span>
+            <span class="link-task-title">{{ t.title }}</span>
+            <span
+              v-if="t.stage"
+              class="stage-pill"
+              :style="`background:${t.stage.color}22;color:${t.stage.color};border-color:${t.stage.color}44`"
+            >
+              {{ t.stage.name }}
+            </span>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-ghost" @click="showLinkModal = false">Отмена</button>
+          <button
+            class="btn btn-primary"
+            :disabled="selectedLinks.length === 0"
+            @click="addLinks"
+          >
+            Связать ({{ selectedLinks.length }})
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div v-else class="loading-screen">Загрузка...</div>
@@ -272,7 +359,47 @@ const priorityLabel = computed(() => priorities[(editForm.priority ?? 3) - 1])
 const priorityColor = computed(() => priorityColors[(editForm.priority ?? 3) - 1])
 const isOverdue     = computed(() => task.value?.dueDate && new Date(task.value.dueDate) < new Date())
 
+// Связанные задачи
+const linkedTasks = ref([])
+const showLinkModal = ref(false)
+const allTasks = ref([])
+const selectedLinks = ref([])
+
+async function loadLinks() {
+  const { data } = await api.get(`/tasks/${route.params.id}/links`)
+  linkedTasks.value = data
+}
+
+async function openLinkModal() {
+  const { data } = await api.get('/tasks')
+  // Фильтруем: убираем текущую задачу и уже связанные
+  const linkedIds = linkedTasks.value.map(l => l.task.id)
+  allTasks.value = data.filter(t => t.id !== task.value.id && !linkedIds.includes(t.id))
+  selectedLinks.value = []
+  showLinkModal.value = true
+}
+
+async function addLinks() {
+  await Promise.all(
+    selectedLinks.value.map(id => api.post(`/tasks/${task.value.id}/links`, id))
+  )
+  showLinkModal.value = false
+  await loadLinks()
+}
+
+async function removeLink(linkedTaskId) {
+  await api.delete(`/tasks/${task.value.id}/links/${linkedTaskId}`)
+  await loadLinks()
+}
+
+function toggleLink(id) {
+  const i = selectedLinks.value.indexOf(id)
+  if (i === -1) selectedLinks.value.push(id)
+  else selectedLinks.value.splice(i, 1)
+}
+
 function getPriorityColor(p) { return priorityColors[(p ?? 3) - 1] }
+function getPriorityLabel(p) { return priorities[(p ?? 3) - 1] }
 
 function formatDate(d) {
   if (!d) return '—'
@@ -287,6 +414,7 @@ async function load() {
   editForm.priority    = task.value.priority
   editForm.dueDate     = task.value.dueDate ? task.value.dueDate.split('T')[0] : null
   await commentsStore.fetch(task.value.id)
+  await loadLinks()
 }
 
 onMounted(load)
@@ -471,6 +599,7 @@ label { font-size: 13px; color: var(--muted); margin-bottom: 8px; display: block
 .subtask-info { display: flex; align-items: flex-start; gap: 10px; }
 .subtask-priority-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
 .subtask-title { font-size: 14px; font-weight: 500; }
+.subtask-date { font-size: 11px; color: var(--muted); margin-top: 2px; }
 .subtask-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
 .subtask-actions { display: flex; align-items: center; gap: 6px; }
 
@@ -566,4 +695,65 @@ label { font-size: 13px; color: var(--muted); margin-bottom: 8px; display: block
   color: var(--muted);
   font-size: 16px;
 }
+
+/* Связанные задачи */
+.linked-list { display: flex; flex-direction: column; gap: 8px; }
+
+.linked-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: border-color .2s;
+}
+.linked-row:hover { border-color: var(--accent); }
+.linked-left { display: flex; align-items: center; gap: 8px; }
+.linked-right { display: flex; align-items: center; gap: 8px; }
+.linked-id { font-size: 11px; color: var(--muted); font-weight: 500; }
+.linked-title { font-size: 14px; font-weight: 500; }
+
+/* Модалка связанных задач */
+.modal-lg { max-width: 560px; }
+
+.link-tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 360px;
+  overflow-y: auto;
+  margin-bottom: 16px;
+}
+
+.link-task-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all .15s;
+}
+.link-task-row:hover { background: var(--surface2); }
+.link-task-row.selected { border-color: var(--accent); background: rgba(91,127,255,.08); }
+.link-task-title { flex: 1; font-size: 13px; }
+
+.checkbox {
+  width: 17px;
+  height: 17px;
+  border-radius: 5px;
+  flex-shrink: 0;
+  border: 1.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .2s;
+  color: #fff;
+}
+.checkbox.checked { background: var(--accent); border-color: var(--accent); }
+.checkbox svg { width: 10px; height: 10px; }
 </style>

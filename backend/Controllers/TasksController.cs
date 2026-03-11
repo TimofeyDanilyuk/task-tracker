@@ -33,9 +33,16 @@ public class TasksController : ControllerBase
             .Include(t => t.Comments)
             .Where(t => t.ParentTaskId == null && t.UserId == UserId &&
                     (isTodo == null || t.IsTodo == isTodo))
-            .Select(t => new {
-                t.Id, t.Title, t.Description, t.Priority,
-                t.CreatedAt, t.DueDate, t.StageId, t.IsTodo,
+            .Select(t => new
+            {
+                t.Id,
+                t.Title,
+                t.Description,
+                t.Priority,
+                t.CreatedAt,
+                t.DueDate,
+                t.StageId,
+                t.IsTodo,
                 Stage = t.Stage == null ? null : new { t.Stage.Id, t.Stage.Name, t.Stage.Color },
                 SubTasks = t.SubTasks.Select(s => new { s.Id, s.Title, s.Priority, s.IsDone }),
                 Comments = t.Comments.Select(c => new { c.Id, c.Text })
@@ -129,6 +136,65 @@ public class TasksController : ControllerBase
         var task = await _db.Tasks.FindAsync(id);
         if (task is null) return NotFound();
         _db.Tasks.Remove(task);
+        await _db.SaveChangesAsync();
+        return Ok();
+    }
+
+    [HttpGet("{id}/links")]
+    public async Task<IActionResult> GetLinks(int id)
+    {
+        var links = await _db.TaskLinks
+            .Where(l => l.TaskId == id || l.LinkedTaskId == id)
+            .Include(l => l.Task).ThenInclude(t => t!.Stage)
+            .Include(l => l.LinkedTask).ThenInclude(t => t!.Stage)
+            .Select(l => new
+            {
+                id = l.Id,
+                task = l.TaskId == id
+                    ? new
+                    {
+                        l.LinkedTask!.Id,
+                        l.LinkedTask.Title,
+                        l.LinkedTask.Priority,
+                        Stage = l.LinkedTask.Stage == null ? null : new { l.LinkedTask.Stage.Id, l.LinkedTask.Stage.Name, l.LinkedTask.Stage.Color }
+                    }
+                    : new
+                    {
+                        l.Task!.Id,
+                        l.Task.Title,
+                        l.Task.Priority,
+                        Stage = l.Task.Stage == null ? null : new { l.Task.Stage.Id, l.Task.Stage.Name, l.Task.Stage.Color }
+                    }
+            })
+            .ToListAsync();
+
+        return Ok(links);
+    }
+
+    [HttpPost("{id}/links")]
+    public async Task<IActionResult> AddLink(int id, [FromBody] int linkedTaskId)
+    {
+        var exists = await _db.TaskLinks.AnyAsync(l =>
+            (l.TaskId == id && l.LinkedTaskId == linkedTaskId) ||
+            (l.TaskId == linkedTaskId && l.LinkedTaskId == id));
+
+        if (exists) return BadRequest("Связь уже существует");
+
+        var link = new TaskLink { TaskId = id, LinkedTaskId = linkedTaskId };
+        _db.TaskLinks.Add(link);
+        await _db.SaveChangesAsync();
+        return Ok(link);
+    }
+
+    [HttpDelete("{id}/links/{linkedTaskId}")]
+    public async Task<IActionResult> RemoveLink(int id, int linkedTaskId)
+    {
+        var link = await _db.TaskLinks.FirstOrDefaultAsync(l =>
+            (l.TaskId == id && l.LinkedTaskId == linkedTaskId) ||
+            (l.TaskId == linkedTaskId && l.LinkedTaskId == id));
+
+        if (link is null) return NotFound();
+        _db.TaskLinks.Remove(link);
         await _db.SaveChangesAsync();
         return Ok();
     }

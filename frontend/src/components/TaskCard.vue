@@ -5,9 +5,12 @@
     @click="$emit('click')"
   >
     <div class="card-top">
-      <span class="priority-badge" :style="`background:${priorityColor}22;color:${priorityColor}`">
-        {{ priorityLabel }}
-      </span>
+      <div class="card-top-left">
+        <span class="task-id">#{{ task.id }}</span>
+        <span class="priority-badge" :style="`background:${priorityColor}22;color:${priorityColor}`">
+          {{ priorityLabel }}
+        </span>
+      </div>
       <button class="delete-btn" @click.stop="$emit('delete', task.id)">✕</button>
     </div>
 
@@ -15,12 +18,15 @@
     <p v-if="task.description" class="task-desc">{{ task.description }}</p>
 
     <div class="card-footer">
-      <span v-if="task.dueDate" class="due" :class="{ overdue: isOverdue }">
-        📅 {{ formatDate(task.dueDate) }}
-      </span>
-      <div class="card-badges">
-        <span v-if="task.subTasks?.length" class="badge">⊟ {{ task.subTasks.length }}</span>
-        <span v-if="task.comments?.length" class="badge">◎ {{ task.comments.length }}</span>
+      <span class="created-date">{{ formatDate(task.createdAt) }}</span>
+      <div class="card-right">
+        <span v-if="task.dueDate" class="due" :class="{ overdue: isOverdue }">
+          📅 {{ formatDate(task.dueDate) }}
+        </span>
+        <div class="card-badges">
+          <span v-if="task.subTasks?.length" class="badge">⊟ {{ task.subTasks.length }}</span>
+          <span v-if="task.comments?.length" class="badge">◎ {{ task.comments.length }}</span>
+        </div>
       </div>
     </div>
   </div>
@@ -45,7 +51,8 @@ const priorityColor = computed(() => priorities[props.task.priority - 1]?.color 
 const isOverdue     = computed(() => props.task.dueDate && new Date(props.task.dueDate) < new Date())
 
 function formatDate(d) {
-  return new Date(d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
+  if (!d) return '—'
+  return new Date(d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 </script>
 
@@ -71,6 +78,15 @@ function formatDate(d) {
 }
 
 .card-top { display: flex; align-items: center; justify-content: space-between; }
+.card-top-left { display: flex; align-items: center; gap: 8px; }
+
+.task-id {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+}
+
 .priority-badge {
   font-size: 11px; font-weight: 600;
   padding: 3px 10px; border-radius: 99px; letter-spacing: .3px;
@@ -89,7 +105,12 @@ function formatDate(d) {
   -webkit-line-clamp: 2; -webkit-box-orient: vertical;
 }
 
-.card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
+.card-footer {
+  display: flex; align-items: center;
+  justify-content: space-between; margin-top: 4px;
+}
+.created-date { font-size: 11px; color: var(--muted); }
+.card-right { display: flex; align-items: center; gap: 8px; }
 .due { font-size: 12px; color: var(--muted); }
 .due.overdue { color: var(--danger); }
 .card-badges { display: flex; gap: 6px; }

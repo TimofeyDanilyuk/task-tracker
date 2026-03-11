@@ -11,4 +11,5 @@ public class AppDbContext : DbContext
     public DbSet<TaskItem> Tasks => Set<TaskItem>();
     public DbSet<Comment> Comments => Set<Comment>();
     public DbSet<User> Users => Set<User>();
+    public DbSet<TaskLink> TaskLinks => Set<TaskLink>();
 }
