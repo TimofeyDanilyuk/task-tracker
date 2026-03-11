@@ -217,12 +217,14 @@ async function onDragEnd(evt, targetStageId) {
   const element = evt.added?.element
   if (!element) return
 
-  if (element.stageId === targetStageId) return
+  console.log('drag:', element.id, 'from', element.stageId, 'to', targetStageId)
 
   const task = tasks.value.find(t => t.id === element.id)
   if (task) task.stageId = targetStageId
 
   await tasksStore.changeStage(element.id, targetStageId)
+  
+  await tasksStore.fetch(false)
 }
 
 async function deleteTask(id) {

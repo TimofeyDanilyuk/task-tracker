@@ -15,6 +15,7 @@ public class TasksController : ControllerBase
     public TasksController(AppDbContext db) => _db = db;
     private int UserId => int.Parse(User.FindFirst("userId")!.Value);
     public class LinkRequest { public int LinkedTaskId { get; set; } }
+    public class StageRequest { public int? StageId { get; set; } }
 
 
     [HttpPatch("{id}/done")]
@@ -122,13 +123,13 @@ public class TasksController : ControllerBase
     }
 
     [HttpPatch("{id}/stage")]
-    public async Task<IActionResult> ChangeStage(int id, [FromBody] int stageId)
+    public async Task<IActionResult> ChangeStage(int id, [FromBody] StageRequest req)
     {
         var task = await _db.Tasks.FindAsync(id);
         if (task is null) return NotFound();
-        task.StageId = stageId;
+        task.StageId = req.StageId;
         await _db.SaveChangesAsync();
-        return Ok(task);
+        return Ok();
     }
 
     [HttpDelete("{id}")]

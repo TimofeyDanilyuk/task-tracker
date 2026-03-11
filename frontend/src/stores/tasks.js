@@ -23,7 +23,7 @@ export const useTasksStore = defineStore('tasks', {
       if (i !== -1) this.tasks[i] = data
     },
     async changeStage(id, stageId) {
-      await api.patch(`/tasks/${id}/stage`, stageId)
+      await api.patch(`/tasks/${id}/stage`, { stageId })
       const task = this.tasks.find(t => t.id === id)
       if (task) task.stageId = stageId
     },
