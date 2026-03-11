@@ -1,0 +1,4 @@
+[deploy]
+startCommand = "ASPNETCORE_URLS=http://+:$PORT ./out/backend"
+healthcheckPath = "/api/stages"
+healthcheckTimeout = 30
