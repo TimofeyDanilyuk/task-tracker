@@ -381,7 +381,7 @@ async function openLinkModal() {
 
 async function addLinks() {
   await Promise.all(
-    selectedLinks.value.map(id => api.post(`/tasks/${task.value.id}/links`, id))
+    selectedLinks.value.map(id => api.post(`/tasks/${task.value.id}/links`, { linkedTaskId: id }))
   )
   showLinkModal.value = false
   await loadLinks()

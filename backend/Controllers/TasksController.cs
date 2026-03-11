@@ -14,6 +14,7 @@ public class TasksController : ControllerBase
     private readonly AppDbContext _db;
     public TasksController(AppDbContext db) => _db = db;
     private int UserId => int.Parse(User.FindFirst("userId")!.Value);
+    public class LinkRequest { public int LinkedTaskId { get; set; } }
 
 
     [HttpPatch("{id}/done")]
@@ -172,15 +173,15 @@ public class TasksController : ControllerBase
     }
 
     [HttpPost("{id}/links")]
-    public async Task<IActionResult> AddLink(int id, [FromBody] int linkedTaskId)
+    public async Task<IActionResult> AddLink(int id, [FromBody] LinkRequest req)
     {
         var exists = await _db.TaskLinks.AnyAsync(l =>
-            (l.TaskId == id && l.LinkedTaskId == linkedTaskId) ||
-            (l.TaskId == linkedTaskId && l.LinkedTaskId == id));
+            (l.TaskId == id && l.LinkedTaskId == req.LinkedTaskId) ||
+            (l.TaskId == req.LinkedTaskId && l.LinkedTaskId == id));
 
         if (exists) return BadRequest("Связь уже существует");
 
-        var link = new TaskLink { TaskId = id, LinkedTaskId = linkedTaskId };
+        var link = new TaskLink { TaskId = id, LinkedTaskId = req.LinkedTaskId };
         _db.TaskLinks.Add(link);
         await _db.SaveChangesAsync();
         return Ok(link);
