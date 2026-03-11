@@ -1,5 +1,0 @@
-{
-  "deploy": {
-    "startCommand": "ASPNETCORE_URLS=http://+:$PORT ./out/backend"
-  }
-}
