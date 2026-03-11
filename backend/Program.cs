@@ -45,9 +45,6 @@ builder.Services.AddControllers()
             System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
     });
 
-builder.Services.AddEndpointsApiExplorer();
-
-// Разрешаем любой origin — для продакшена достаточно
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
@@ -61,13 +58,10 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 app.UseCors();
-
 app.UseDefaultFiles();
 app.UseStaticFiles();
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 app.MapFallbackToFile("index.html");
 

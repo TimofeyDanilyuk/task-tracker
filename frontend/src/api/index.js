@@ -1,8 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://127.0.0.1:5195/api',
-  headers: { 'Content-Type': 'application/json' }
+  baseURL: 'https://task-tracker-production-5305.up.railway.app/api'
 })
 
 api.interceptors.request.use(config => {
