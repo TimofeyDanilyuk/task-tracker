@@ -159,6 +159,8 @@ label {
     padding: 32px;
     width: 520px;
     max-width: 95vw;
+    max-height: 90dvh;
+    overflow-y: auto;
     box-shadow: var(--shadow);
     animation: slideUp .25s ease;
 }

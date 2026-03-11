@@ -75,8 +75,6 @@
             class="lane-cards"
             :list="tasks.filter(t => !t.stageId)"
             group="tasks"
-            :force-fallback="true"
-            fallback-class="dragging"
             item-key="id"
             @change="onDragEnd($event, null)"
             @start="onDragStart"
@@ -120,8 +118,6 @@
             class="lane-cards"
             :list="tasks.filter(t => t.stageId === stage.id)"
             group="tasks"
-            :force-fallback="true"
-            fallback-class="dragging"
             item-key="id"
             @change="onDragEnd($event, stage.id)"
             @start="onDragStart"
@@ -220,6 +216,7 @@ function onDragEndGlobal() { isDragging.value = false }
 async function onDragEnd(evt, targetStageId) {
   const element = evt.added?.element
   if (!element) return
+
   if (element.stageId === targetStageId) return
 
   const task = tasks.value.find(t => t.id === element.id)
