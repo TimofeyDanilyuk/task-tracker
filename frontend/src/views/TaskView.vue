@@ -15,7 +15,7 @@
           <option :value="null">— Без этапа —</option>
           <option v-for="s in stages" :key="s.id" :value="s.id">{{ s.name }}</option>
         </select>
-        <button class="btn btn-danger" @click="deleteTask">Удалить задачу</button>
+        <button class="btn btn-danger" @click="deleteTask">Удалить задачу.</button>
       </div>
     </header>
 
@@ -161,7 +161,7 @@
         </div>
       </div>
 
-      <!-- Правая колонка — мета -->
+      <!-- Правая колонка — мет -->
       <aside class="tv-sidebar">
         <div class="meta-card">
           <h4>Детали</h4>
