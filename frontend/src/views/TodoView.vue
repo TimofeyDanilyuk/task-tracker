@@ -335,7 +335,7 @@ async function deleteTask(id) {
 </script>
 
 <style scoped>
-.board-layout { display: flex; min-height: 100vh; }
+.board-layout { display: flex; height: 100vh; overflow: hidden; }
 
 /* Sidebar */
 .sidebar {
@@ -421,7 +421,7 @@ async function deleteTask(id) {
 .sidebar-overlay.active { opacity: 1; }
 
 /* Main */
-.board-main { flex: 1; padding: 40px 36px; overflow-y: auto; min-width: 0; }
+.board-main { flex: 1; padding: 40px 36px; overflow-y: auto; min-width: 0; height: 100vh; }
 .board-header {
   display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 36px;
 }
@@ -549,5 +549,15 @@ textarea { resize: vertical; min-height: 60px; }
   .board-sub { font-size: 11px; }
 
   .todo-grid { grid-template-columns: 1fr; }
+
+  .board-main { padding: 20px 16px; height: 100dvh; }
+  .board-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--bg);
+    padding-bottom: 16px;
+    margin-bottom: 0;
+  }
 }
 </style>
