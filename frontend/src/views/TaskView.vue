@@ -418,6 +418,9 @@ async function load() {
 }
 
 onMounted(load)
+watch(() => route.params.id, (newId) => {
+  if (newId) load()
+})
 
 async function saveTask() {
   editingTitle.value = false
@@ -756,4 +759,38 @@ label { font-size: 13px; color: var(--muted); margin-bottom: 8px; display: block
 }
 .checkbox.checked { background: var(--accent); border-color: var(--accent); }
 .checkbox svg { width: 10px; height: 10px; }
+
+@media (max-width: 768px) {
+  .tv-header {
+    padding: 14px 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .tv-header-right {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .stage-switcher {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  .tv-body {
+    grid-template-columns: 1fr;
+    padding: 20px 16px;
+    gap: 0;
+  }
+
+  .tv-sidebar { order: -1; margin-bottom: 24px; }
+  .meta-card { position: static; }
+
+  .tv-title { font-size: 20px; }
+  .tv-title-input { font-size: 18px; }
+
+  .linked-left { flex-wrap: wrap; gap: 6px; }
+  .linked-title { font-size: 13px; }
+
+  .comment-input-row { flex-direction: column; }
+  .comment-input-row .btn { width: 100%; }
+}
 </style>
