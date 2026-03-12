@@ -426,7 +426,11 @@ async function load() {
 
   if (task.value.boardId) {
     const { data } = await api.get(`/boards/${task.value.boardId}`)
-    boardMembers.value = data.members ?? []
+    const members = data.members ?? []
+    if (!members.find(m => m.userId === data.owner.id)) {
+      members.unshift({ userId: data.owner.id, username: data.owner.username })
+    }
+    boardMembers.value = members
   }
 
   if (!task.value) return
