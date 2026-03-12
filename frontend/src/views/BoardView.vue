@@ -230,7 +230,7 @@ async function deleteTask(id) {
 
 function onTaskCreated() {
   showTaskModal.value = false
-  tasksStore.fetch()
+  tasksStore.fetch(false)
 }
 </script>
 

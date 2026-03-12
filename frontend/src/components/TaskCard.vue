@@ -28,7 +28,7 @@
           <span v-if="task.comments?.length" class="badge">◎ {{ task.comments.length }}</span>
         </div>
         <div v-if="task.assignedUser" class="assigned-avatar" :title="task.assignedUser.username">
-          {{ task.assignedUser.username[0].toUpperCase() }}
+          {{ task.assignedUser.username?.[0]?.toUpperCase() }}
         </div>
       </div>
     </div>
@@ -49,9 +49,9 @@ const priorities = [
   { label: 'Минимум',   color: '#6b7280' },
 ]
 
-const priorityLabel = computed(() => priorities[props.task.priority - 1]?.label ?? '—')
-const priorityColor = computed(() => priorities[props.task.priority - 1]?.color ?? '#6b7280')
-const isOverdue     = computed(() => props.task.dueDate && new Date(props.task.dueDate) < new Date())
+const priorityLabel = computed(() => priorities[(props.task?.priority ?? 3) - 1]?.label ?? '—')
+const priorityColor = computed(() => priorities[(props.task?.priority ?? 3) - 1]?.color ?? '#6b7280')
+const isOverdue = computed(() => props.task?.dueDate && new Date(props.task.dueDate) < new Date())
 
 function formatDate(d) {
   if (!d) return '—'

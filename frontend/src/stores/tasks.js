@@ -14,7 +14,7 @@ export const useTasksStore = defineStore('tasks', {
     },
     async create(task) {
       const { data } = await api.post('/tasks', task)
-      this.tasks.push(data)
+     
       return data
     },
     async update(id, task) {
