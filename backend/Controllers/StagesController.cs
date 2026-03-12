@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using backend.Data;
 using backend.Models;
+using System.Security.Claims;
 
 namespace backend.Controllers;
 
@@ -13,13 +14,16 @@ public class StagesController : ControllerBase
     private readonly AppDbContext _db;
     public StagesController(AppDbContext db) => _db = db;
 
+    private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
     [HttpGet]
     public async Task<IActionResult> GetAll() =>
-        Ok(await _db.Stages.ToListAsync());
+        Ok(await _db.Stages.Where(s => s.UserId == UserId).ToListAsync());
 
     [HttpPost]
     public async Task<IActionResult> Create(Stage stage)
     {
+        stage.UserId = UserId;
         _db.Stages.Add(stage);
         await _db.SaveChangesAsync();
         return Ok(stage);
@@ -28,7 +32,7 @@ public class StagesController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, Stage updated)
     {
-        var stage = await _db.Stages.FindAsync(id);
+        var stage = await _db.Stages.FirstOrDefaultAsync(s => s.Id == id && s.UserId == UserId);
         if (stage is null) return NotFound();
         stage.Name = updated.Name;
         stage.Color = updated.Color;
@@ -39,7 +43,7 @@ public class StagesController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var stage = await _db.Stages.FindAsync(id);
+        var stage = await _db.Stages.FirstOrDefaultAsync(s => s.Id == id && s.UserId == UserId);
         if (stage is null) return NotFound();
         _db.Stages.Remove(stage);
         await _db.SaveChangesAsync();
