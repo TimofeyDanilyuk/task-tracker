@@ -14,7 +14,7 @@ public class StagesController : ControllerBase
     private readonly AppDbContext _db;
     public StagesController(AppDbContext db) => _db = db;
 
-    private int UserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private int UserId => int.Parse(User.FindFirstValue("userId")!);
 
     [HttpGet]
     public async Task<IActionResult> GetAll() =>
