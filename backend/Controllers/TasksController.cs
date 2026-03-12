@@ -17,7 +17,6 @@ public class TasksController : ControllerBase
     public class LinkRequest { public int LinkedTaskId { get; set; } }
     public class StageRequest { public int? StageId { get; set; } }
 
-
     [HttpPatch("{id}/done")]
     public async Task<IActionResult> ToggleDone(int id)
     {
@@ -27,6 +26,8 @@ public class TasksController : ControllerBase
         await _db.SaveChangesAsync();
         return Ok(task);
     }
+
+    // Личные задачи
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] bool? isTodo = null) =>
         Ok(await _db.Tasks
@@ -34,6 +35,7 @@ public class TasksController : ControllerBase
             .Include(t => t.SubTasks)
             .Include(t => t.Comments)
             .Where(t => t.ParentTaskId == null && t.UserId == UserId &&
+                    t.BoardId == null &&
                     (isTodo == null || t.IsTodo == isTodo))
             .Select(t => new
             {
@@ -51,6 +53,36 @@ public class TasksController : ControllerBase
             })
             .ToListAsync());
 
+    // Задачи доски
+    [HttpGet("board/{boardId}")]
+    public async Task<IActionResult> GetBoardTasks(int boardId, [FromQuery] bool? isTodo = null)
+    {
+        var hasAccess = await _db.Boards.AnyAsync(b =>
+            b.Id == boardId && (b.OwnerId == UserId || b.Members.Any(m => m.UserId == UserId)));
+        if (!hasAccess) return Forbid();
+
+        return Ok(await _db.Tasks
+            .Include(t => t.Stage)
+            .Include(t => t.SubTasks)
+            .Where(t => t.ParentTaskId == null && t.BoardId == boardId &&
+                    (isTodo == null || t.IsTodo == isTodo))
+            .Select(t => new
+            {
+                t.Id,
+                t.Title,
+                t.Description,
+                t.Priority,
+                t.CreatedAt,
+                t.DueDate,
+                t.StageId,
+                t.IsTodo,
+                t.AssignedUserId,
+                AssignedUser = t.AssignedUser == null ? null : new { t.AssignedUser.Id, t.AssignedUser.Username },
+                Stage = t.Stage == null ? null : new { t.Stage.Id, t.Stage.Name, t.Stage.Color },
+                SubTasks = t.SubTasks.Select(s => new { s.Id, s.Title, s.Priority, s.IsDone }),
+            })
+            .ToListAsync());
+    }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
@@ -58,8 +90,7 @@ public class TasksController : ControllerBase
         var task = await _db.Tasks
             .Include(t => t.Stage)
             .Include(t => t.Comments)
-            .Include(t => t.SubTasks)
-                .ThenInclude(s => s.Comments)
+            .Include(t => t.SubTasks).ThenInclude(s => s.Comments)
             .Where(t => t.Id == id)
             .Select(t => new
             {
@@ -70,6 +101,9 @@ public class TasksController : ControllerBase
                 t.CreatedAt,
                 t.DueDate,
                 t.StageId,
+                t.BoardId,
+                t.AssignedUserId,
+                AssignedUser = t.AssignedUser == null ? null : new { t.AssignedUser.Id, t.AssignedUser.Username },
                 Stage = t.Stage == null ? null : new { t.Stage.Id, t.Stage.Name, t.Stage.Color },
                 SubTasks = t.SubTasks.Select(s => new
                 {
@@ -78,6 +112,7 @@ public class TasksController : ControllerBase
                     s.Description,
                     s.Priority,
                     s.IsDone,
+                    s.CreatedAt,
                     Comments = s.Comments.Select(c => new { c.Id, c.Text, c.CreatedAt })
                 }),
                 Comments = t.Comments.Select(c => new { c.Id, c.Text, c.CreatedAt })
@@ -96,6 +131,15 @@ public class TasksController : ControllerBase
         {
             var parent = await _db.Tasks.FindAsync(task.ParentTaskId);
             task.UserId = parent?.UserId;
+            task.BoardId = parent?.BoardId;
+        }
+        else if (task.BoardId.HasValue)
+        {
+            // Задача доски — проверяем доступ
+            var hasAccess = await _db.Boards.AnyAsync(b =>
+                b.Id == task.BoardId && (b.OwnerId == UserId || b.Members.Any(m => m.UserId == UserId)));
+            if (!hasAccess) return Forbid();
+            task.UserId = UserId;
         }
         else
         {
@@ -111,6 +155,14 @@ public class TasksController : ControllerBase
     {
         var task = await _db.Tasks.FindAsync(id);
         if (task is null) return NotFound();
+
+        // Для задач доски — проверяем что хотя бы участник
+        if (task.BoardId.HasValue)
+        {
+            var hasAccess = await _db.Boards.AnyAsync(b =>
+                b.Id == task.BoardId && (b.OwnerId == UserId || b.Members.Any(m => m.UserId == UserId)));
+            if (!hasAccess) return Forbid();
+        }
 
         task.Title = updated.Title;
         task.Description = updated.Description;
@@ -137,6 +189,13 @@ public class TasksController : ControllerBase
     {
         var task = await _db.Tasks.FindAsync(id);
         if (task is null) return NotFound();
+
+        if (task.BoardId.HasValue)
+        {
+            var isAdmin = await IsAdmin(task.BoardId.Value);
+            if (!isAdmin) return Forbid();
+        }
+
         _db.Tasks.Remove(task);
         await _db.SaveChangesAsync();
         return Ok();
@@ -153,23 +212,10 @@ public class TasksController : ControllerBase
             {
                 id = l.Id,
                 task = l.TaskId == id
-                    ? new
-                    {
-                        l.LinkedTask!.Id,
-                        l.LinkedTask.Title,
-                        l.LinkedTask.Priority,
-                        Stage = l.LinkedTask.Stage == null ? null : new { l.LinkedTask.Stage.Id, l.LinkedTask.Stage.Name, l.LinkedTask.Stage.Color }
-                    }
-                    : new
-                    {
-                        l.Task!.Id,
-                        l.Task.Title,
-                        l.Task.Priority,
-                        Stage = l.Task.Stage == null ? null : new { l.Task.Stage.Id, l.Task.Stage.Name, l.Task.Stage.Color }
-                    }
+                    ? new { l.LinkedTask!.Id, l.LinkedTask.Title, l.LinkedTask.Priority, Stage = l.LinkedTask.Stage == null ? null : new { l.LinkedTask.Stage.Id, l.LinkedTask.Stage.Name, l.LinkedTask.Stage.Color } }
+                    : new { l.Task!.Id, l.Task.Title, l.Task.Priority, Stage = l.Task.Stage == null ? null : new { l.Task.Stage.Id, l.Task.Stage.Name, l.Task.Stage.Color } }
             })
             .ToListAsync();
-
         return Ok(links);
     }
 
@@ -179,9 +225,7 @@ public class TasksController : ControllerBase
         var exists = await _db.TaskLinks.AnyAsync(l =>
             (l.TaskId == id && l.LinkedTaskId == req.LinkedTaskId) ||
             (l.TaskId == req.LinkedTaskId && l.LinkedTaskId == id));
-
         if (exists) return BadRequest("Связь уже существует");
-
         var link = new TaskLink { TaskId = id, LinkedTaskId = req.LinkedTaskId };
         _db.TaskLinks.Add(link);
         await _db.SaveChangesAsync();
@@ -194,10 +238,18 @@ public class TasksController : ControllerBase
         var link = await _db.TaskLinks.FirstOrDefaultAsync(l =>
             (l.TaskId == id && l.LinkedTaskId == linkedTaskId) ||
             (l.TaskId == linkedTaskId && l.LinkedTaskId == id));
-
         if (link is null) return NotFound();
         _db.TaskLinks.Remove(link);
         await _db.SaveChangesAsync();
         return Ok();
+    }
+
+    private async Task<bool> IsAdmin(int boardId)
+    {
+        var board = await _db.Boards.Include(b => b.Members)
+            .FirstOrDefaultAsync(b => b.Id == boardId);
+        if (board is null) return false;
+        return board.OwnerId == UserId ||
+            board.Members.Any(m => m.UserId == UserId && m.Role == BoardRole.Admin);
     }
 }
