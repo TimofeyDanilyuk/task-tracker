@@ -425,8 +425,8 @@ async function load() {
   task.value = tasksStore.current
 
   if (task.value.boardId) {
-    const { data } = await api.get(`/boards/${task.value.boardId}/members`)
-    boardMembers.value = data
+    const { data } = await api.get(`/boards/${task.value.boardId}`)
+    boardMembers.value = data.members ?? []
   }
 
   if (!task.value) return
