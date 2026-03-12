@@ -355,8 +355,8 @@ const editForm = reactive({ title: '', description: '', priority: 3, dueDate: nu
 const subForm = reactive({ title: '', description: '', priority: 3 })
 
 const currentStage  = computed(() => stages.value.find(s => s.id === task.value?.stageId))
-const priorityLabel = computed(() => priorities[(editForm.priority ?? 3) - 1])
-const priorityColor = computed(() => priorityColors[(editForm.priority ?? 3) - 1])
+const priorityLabel = computed(() => priorities[((task.value?.priority ?? editForm.priority) ?? 3) - 1])
+const priorityColor = computed(() => priorityColors[((task.value?.priority ?? editForm.priority) ?? 3) - 1])
 const isOverdue     = computed(() => task.value?.dueDate && new Date(task.value.dueDate) < new Date())
 
 // Связанные задачи
@@ -409,6 +409,7 @@ function formatDate(d) {
 async function load() {
   await Promise.all([stagesStore.fetch(), tasksStore.fetchOne(route.params.id)])
   task.value = tasksStore.current
+  if (!task.value) return
   editForm.title       = task.value.title
   editForm.description = task.value.description
   editForm.priority    = task.value.priority
