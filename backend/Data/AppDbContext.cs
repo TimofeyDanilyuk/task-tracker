@@ -12,4 +12,5 @@ public class AppDbContext : DbContext
     public DbSet<Comment> Comments => Set<Comment>();
     public DbSet<User> Users => Set<User>();
     public DbSet<TaskLink> TaskLinks => Set<TaskLink>();
+    public DbSet<Friendship> Friendships => Set<Friendship>();
 }
