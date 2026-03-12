@@ -13,6 +13,10 @@
       <nav class="sidebar-nav">
         <a class="nav-item" @click="router.push('/'); sidebarOpen = false"><span>⊞</span> Доска</a>
         <a class="nav-item active"><span>✓</span> ToDo</a>
+        <a class="nav-item" @click="router.push('/friends'); sidebarOpen = false">
+          <span>👥</span> Друзья
+          <span v-if="friendsStore.requestsCount > 0" class="nav-badge">{{ friendsStore.requestsCount }}</span>
+        </a>
       </nav>
       <div class="user-badge">
         <span class="user-name">👤 {{ authStore.username }}</span>
@@ -236,6 +240,9 @@ import { useStagesStore } from '@/stores/stages'
 import { storeToRefs } from 'pinia'
 import api from '@/api'
 import { useAuthStore } from '@/stores/auth'
+import { useFriendsStore } from '@/stores/friends'
+
+const friendsStore = useFriendsStore()
 
 const authStore = useAuthStore()
 function logout() {
@@ -295,7 +302,7 @@ async function load() {
 }
 
 onMounted(async () => {
-  await Promise.all([stagesStore.fetch(), load()])
+  await Promise.all([stagesStore.fetch(), load(), friendsStore.fetchRequestsCount()])
   loading.value = false
 })
 
@@ -559,5 +566,17 @@ textarea { resize: vertical; min-height: 60px; }
     padding-bottom: 16px;
     margin-bottom: 0;
   }
+}
+
+.nav-badge {
+  margin-left: auto;
+  background: var(--danger);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 99px;
+  min-width: 18px;
+  text-align: center;
 }
 </style>

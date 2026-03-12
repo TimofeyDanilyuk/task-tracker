@@ -21,6 +21,10 @@
         <a class="nav-item" @click="router.push('/todo'); sidebarOpen = false">
           <span>✓</span> ToDo лист
         </a>
+        <a class="nav-item" @click="router.push('/friends'); sidebarOpen = false">
+          <span>👥</span> Друзья
+          <span v-if="friendsStore.requestsCount > 0" class="nav-badge">{{ friendsStore.requestsCount }}</span>
+        </a>
       </nav>
       <div class="user-badge">
         <span class="user-name">👤 {{ authStore.username }}</span>
@@ -181,8 +185,11 @@ import TaskCard from '@/components/TaskCard.vue'
 import TaskModal from '@/components/TaskModal.vue'
 import StagesModal from '@/components/StagesModal.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useFriendsStore } from '@/stores/friends'
 
+const friendsStore = useFriendsStore()
 const authStore = useAuthStore()
+
 function logout() {
   authStore.logout()
   router.push('/auth')
@@ -204,7 +211,7 @@ const today = computed(() => new Date().toLocaleDateString('ru-RU', {
 }))
 
 onMounted(async () => {
-  await Promise.all([tasksStore.fetch(false), stagesStore.fetch()])
+  await Promise.all([tasksStore.fetch(false), stagesStore.fetch(), friendsStore.fetchRequestsCount()])
   loading.value = false
 })
 
@@ -406,5 +413,17 @@ function onTaskCreated() {
     grid-template-columns: 1fr;
     padding: 4px 12px 12px;
   }
+}
+
+.nav-badge {
+  margin-left: auto;
+  background: var(--danger);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 99px;
+  min-width: 18px;
+  text-align: center;
 }
 </style>
