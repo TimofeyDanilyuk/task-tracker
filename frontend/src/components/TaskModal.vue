@@ -1,104 +1,95 @@
 <template>
-  <div
-    class="task-card"
-    :style="`--card-color: ${priorityColor}`"
-    @click="$emit('click')"
-  >
-    <div class="card-top">
-      <div class="card-top-left">
-        <span class="task-id">#{{ task.id }}</span>
-        <span class="priority-badge" :style="`background:${priorityColor}22;color:${priorityColor}`">
-          {{ priorityLabel }}
-        </span>
+  <div class="modal-overlay" @click.self="$emit('close')">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Новая задача</h2>
+        <button class="btn btn-ghost" @click="$emit('close')">✕</button>
       </div>
-      <button class="delete-btn" @click.stop="$emit('delete', task.id)">✕</button>
-    </div>
 
-    <h3 class="task-title">{{ task.title }}</h3>
-    <p v-if="task.description" class="task-desc">{{ task.description }}</p>
+      <div class="form-group">
+        <label>Название *</label>
+        <input v-model="form.title" placeholder="Что нужно сделать?" />
+      </div>
+      <div class="form-group">
+        <label>Описание</label>
+        <textarea v-model="form.description" rows="3" placeholder="Подробности..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Приоритет</label>
+          <select v-model="form.priority">
+            <option v-for="(p, i) in priorities" :key="i" :value="i+1">{{ p }}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Этап</label>
+          <select v-model="form.stageId">
+            <option :value="null">— Без этапа —</option>
+            <option v-for="s in stages" :key="s.id" :value="s.id">{{ s.name }}</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group" v-if="members?.length">
+        <label>Ответственный</label>
+        <select v-model="form.assignedUserId">
+          <option :value="null">— Не назначен —</option>
+          <option v-for="m in members" :key="m.userId" :value="m.userId">{{ m.username }}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Дедлайн</label>
+        <input type="date" v-model="form.dueDate" />
+      </div>
 
-    <div class="card-footer">
-      <span class="created-date">{{ formatDate(task.createdAt) }}</span>
-      <div class="card-right">
-        <span v-if="task.dueDate" class="due" :class="{ overdue: isOverdue }">
-          📅 {{ formatDate(task.dueDate) }}
-        </span>
-        <div class="card-badges">
-          <span v-if="task.subTasks?.length" class="badge">⊟ {{ task.subTasks.length }}</span>
-          <span v-if="task.comments?.length" class="badge">◎ {{ task.comments.length }}</span>
-        </div>
-        <div v-if="task.assignedUser" class="assigned-avatar" :title="task.assignedUser.username">
-          {{ task.assignedUser.username[0].toUpperCase() }}
-        </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" @click="$emit('close')">Отмена</button>
+        <button class="btn btn-primary" :disabled="!form.title" @click="submit">
+          Создать задачу
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { reactive } from 'vue'
+import { useTasksStore } from '@/stores/tasks'
+import api from '@/api'
 
-const props = defineProps({ task: Object, stages: Array })
-defineEmits(['click', 'delete'])
+const props = defineProps({
+  stages: Array,
+  boardId: { type: Number, default: null },
+  members: { type: Array, default: () => [] }
+})
+const emit = defineEmits(['close', 'created'])
+const store = useTasksStore()
 
-const priorities = [
-  { label: 'Критичный', color: '#f87171' },
-  { label: 'Высокий',   color: '#fb923c' },
-  { label: 'Средний',   color: '#facc15' },
-  { label: 'Низкий',    color: '#34d399' },
-  { label: 'Минимум',   color: '#6b7280' },
-]
+const priorities = ['Критичный', 'Высокий', 'Средний', 'Низкий', 'Минимум']
 
-const priorityLabel = computed(() => priorities[props.task.priority - 1]?.label ?? '—')
-const priorityColor = computed(() => priorities[props.task.priority - 1]?.color ?? '#6b7280')
-const isOverdue     = computed(() => props.task.dueDate && new Date(props.task.dueDate) < new Date())
+const form = reactive({
+  title: '', description: '', priority: 3,
+  stageId: null, dueDate: null, assignedUserId: null
+})
 
-function formatDate(d) {
-  if (!d) return '—'
-  return new Date(d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })
+async function submit() {
+  if (!form.title.trim()) return
+  if (props.boardId) {
+    await api.post('/tasks', {
+      ...form,
+      boardId: props.boardId,
+      dueDate: form.dueDate ? new Date(form.dueDate).toISOString() : null
+    })
+  } else {
+    await store.create({
+      ...form,
+      dueDate: form.dueDate ? new Date(form.dueDate).toISOString() : null
+    })
+  }
+  emit('created')
 }
 </script>
 
 <style scoped>
-.task-card {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--card-color, var(--accent));
-  border-radius: var(--radius);
-  padding: 16px;
-  cursor: grab;
-  transition: all .22s;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  user-select: none;
-}
-.task-card:active { cursor: grabbing; }
-.task-card:hover {
-  border-color: var(--card-color, var(--accent));
-  transform: translateY(-2px);
-  box-shadow: 0 8px 28px rgba(0,0,0,.3);
-}
-.card-top { display: flex; align-items: center; justify-content: space-between; }
-.card-top-left { display: flex; align-items: center; gap: 8px; }
-.task-id { font-size: 11px; color: var(--muted); font-family: 'DM Sans', sans-serif; font-weight: 500; }
-.priority-badge { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px; letter-spacing: .3px; }
-.delete-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 12px; padding: 2px 6px; border-radius: 6px; transition: all .2s; }
-.delete-btn:hover { color: var(--danger); background: rgba(248,113,113,.1); }
-.task-title { font-size: 14px; font-weight: 600; line-height: 1.4; }
-.task-desc { font-size: 12px; color: var(--muted); line-height: 1.5; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
-.created-date { font-size: 11px; color: var(--muted); }
-.card-right { display: flex; align-items: center; gap: 8px; }
-.due { font-size: 12px; color: var(--muted); }
-.due.overdue { color: var(--danger); }
-.card-badges { display: flex; gap: 6px; }
-.badge { font-size: 11px; color: var(--muted); background: var(--surface); border: 1px solid var(--border); padding: 2px 8px; border-radius: 99px; }
-.assigned-avatar {
-  width: 22px; height: 22px; border-radius: 50%;
-  background: var(--accent); color: #fff;
-  font-size: 11px; font-weight: 700;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+textarea { resize: vertical; min-height: 80px; }
 </style>
