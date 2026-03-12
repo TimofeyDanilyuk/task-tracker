@@ -4,6 +4,7 @@ import TaskView from '@/views/TaskView.vue'
 import TodoView from '@/views/TodoView.vue'
 import AuthView from '@/views/AuthView.vue'
 import FriendsView from '@/views/FriendsView.vue'
+import SharedBoardView from '@/views/SharedBoardView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -12,7 +13,8 @@ const router = createRouter({
     { path: '/', component: BoardView, meta: { auth: true } },
     { path: '/task/:id', component: TaskView, meta: { auth: true } },
     { path: '/todo', component: TodoView, meta: { auth: true } },
-    { path: '/friends', component: FriendsView, meta: { auth: true } }
+    { path: '/friends', component: FriendsView, meta: { auth: true } },
+    { path: '/board/:id', component: SharedBoardView, meta: { auth: true } }
   ]
 })
 

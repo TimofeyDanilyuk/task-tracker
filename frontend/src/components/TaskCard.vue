@@ -27,6 +27,9 @@
           <span v-if="task.subTasks?.length" class="badge">⊟ {{ task.subTasks.length }}</span>
           <span v-if="task.comments?.length" class="badge">◎ {{ task.comments.length }}</span>
         </div>
+        <div v-if="task.assignedUser" class="assigned-avatar" :title="task.assignedUser.username">
+          {{ task.assignedUser.username[0].toUpperCase() }}
+        </div>
       </div>
     </div>
   </div>
@@ -76,47 +79,26 @@ function formatDate(d) {
   transform: translateY(-2px);
   box-shadow: 0 8px 28px rgba(0,0,0,.3);
 }
-
 .card-top { display: flex; align-items: center; justify-content: space-between; }
 .card-top-left { display: flex; align-items: center; gap: 8px; }
-
-.task-id {
-  font-size: 11px;
-  color: var(--muted);
-  font-family: 'DM Sans', sans-serif;
-  font-weight: 500;
-}
-
-.priority-badge {
-  font-size: 11px; font-weight: 600;
-  padding: 3px 10px; border-radius: 99px; letter-spacing: .3px;
-}
-.delete-btn {
-  background: none; border: none; color: var(--muted);
-  cursor: pointer; font-size: 12px; padding: 2px 6px;
-  border-radius: 6px; transition: all .2s;
-}
+.task-id { font-size: 11px; color: var(--muted); font-family: 'DM Sans', sans-serif; font-weight: 500; }
+.priority-badge { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px; letter-spacing: .3px; }
+.delete-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 12px; padding: 2px 6px; border-radius: 6px; transition: all .2s; }
 .delete-btn:hover { color: var(--danger); background: rgba(248,113,113,.1); }
-
 .task-title { font-size: 14px; font-weight: 600; line-height: 1.4; }
-.task-desc {
-  font-size: 12px; color: var(--muted); line-height: 1.5;
-  overflow: hidden; display: -webkit-box;
-  -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-}
-
-.card-footer {
-  display: flex; align-items: center;
-  justify-content: space-between; margin-top: 4px;
-}
+.task-desc { font-size: 12px; color: var(--muted); line-height: 1.5; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
 .created-date { font-size: 11px; color: var(--muted); }
 .card-right { display: flex; align-items: center; gap: 8px; }
 .due { font-size: 12px; color: var(--muted); }
 .due.overdue { color: var(--danger); }
 .card-badges { display: flex; gap: 6px; }
-.badge {
-  font-size: 11px; color: var(--muted);
-  background: var(--surface); border: 1px solid var(--border);
-  padding: 2px 8px; border-radius: 99px;
+.badge { font-size: 11px; color: var(--muted); background: var(--surface); border: 1px solid var(--border); padding: 2px 8px; border-radius: 99px; }
+.assigned-avatar {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
 }
 </style>
