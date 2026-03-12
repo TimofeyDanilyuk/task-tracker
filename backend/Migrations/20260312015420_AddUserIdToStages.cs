@@ -16,15 +16,31 @@ namespace backend.Migrations
                 type: "text",
                 nullable: true);
 
+            // Дублируем этапы для каждого пользователя и запоминаем маппинг старый->новый
             migrationBuilder.Sql(@"
-                INSERT INTO ""Stages"" (""Name"", ""Color"", ""UserId"")
-                SELECT s.""Name"", s.""Color"", u.""Id""
+                CREATE TEMP TABLE stage_mapping AS
+                SELECT s.""Id"" AS old_id, s.""Name"", s.""Color"", u.""Id"" AS user_id
                 FROM ""Stages"" s
                 CROSS JOIN ""Users"" u
-                WHERE s.""UserId"" IS NULL AND u.""Id"" IS NOT NULL;
-            ");
+                WHERE s.""UserId"" IS NULL;
 
-            migrationBuilder.Sql(@"
+                INSERT INTO ""Stages"" (""Name"", ""Color"", ""UserId"")
+                SELECT ""Name"", ""Color"", user_id FROM stage_mapping;
+
+                CREATE TEMP TABLE stage_id_map AS
+                SELECT m.old_id, m.user_id, ns.""Id"" AS new_id
+                FROM stage_mapping m
+                JOIN ""Stages"" ns ON ns.""Name"" = m.""Name"" 
+                    AND ns.""Color"" = m.""Color"" 
+                    AND ns.""UserId"" = m.user_id;
+
+                UPDATE ""Tasks"" t
+                SET ""StageId"" = sm.new_id
+                FROM stage_id_map sm
+                JOIN ""Users"" u ON u.""Id"" = sm.user_id
+                WHERE t.""StageId"" = sm.old_id
+                AND t.""UserId"" = sm.user_id;
+
                 DELETE FROM ""Stages"" WHERE ""UserId"" IS NULL;
             ");
 
