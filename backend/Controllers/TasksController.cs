@@ -169,6 +169,7 @@ public class TasksController : ControllerBase
         task.Priority = updated.Priority;
         task.DueDate = updated.DueDate;
         task.StageId = updated.StageId;
+        task.AssignedUserId = updated.AssignedUserId;
 
         await _db.SaveChangesAsync();
         return Ok(task);

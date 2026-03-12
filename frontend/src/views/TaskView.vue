@@ -206,6 +206,16 @@
               <option v-for="(p, i) in priorities" :key="i" :value="i+1">{{ p }}</option>
             </select>
           </div>
+
+          <div class="meta-edit" v-if="boardMembers.length">
+            <label>Ответственный</label>
+            <select v-model="editForm.assignedUserId" @change="saveTask">
+              <option :value="null">— Не назначен —</option>
+              <option v-for="m in boardMembers" :key="m.userId" :value="m.userId">
+                {{ m.username }}
+              </option>
+            </select>
+          </div>
         </div>
       </aside>
     </div>
@@ -325,6 +335,7 @@ import { useCommentsStore } from '@/stores/comments'
 import { storeToRefs } from 'pinia'
 import api from '@/api'
 import { useAuthStore } from '@/stores/auth'
+import { useBoardsStore } from '@/stores/boards'
 
 const authStore = useAuthStore()
 function logout() {
@@ -348,10 +359,13 @@ const activeSubTask = ref(null)
 const subComments = ref([])
 const newSubComment = ref('')
 
+const boardsStore = useBoardsStore()
+const boardMembers = ref([])
+
 const priorities = ['Критичный', 'Высокий', 'Средний', 'Низкий', 'Минимум']
 const priorityColors = ['#f87171','#fb923c','#facc15','#34d399','#6b7280']
 
-const editForm = reactive({ title: '', description: '', priority: 3, dueDate: null })
+const editForm = reactive({ title: '', description: '', priority: 3, dueDate: null, assignedUserId: null })
 const subForm = reactive({ title: '', description: '', priority: 3 })
 
 const currentStage  = computed(() => stages.value.find(s => s.id === task.value?.stageId))
@@ -409,10 +423,17 @@ function formatDate(d) {
 async function load() {
   await Promise.all([stagesStore.fetch(), tasksStore.fetchOne(route.params.id)])
   task.value = tasksStore.current
+
+  if (task.value.boardId) {
+    const { data } = await api.get(`/boards/${task.value.boardId}/members`)
+    boardMembers.value = data
+  }
+
   if (!task.value) return
   editForm.title       = task.value.title
   editForm.description = task.value.description
   editForm.priority    = task.value.priority
+  editForm.assignedUserId = task.value.assignedUserId ?? null
   editForm.dueDate     = task.value.dueDate ? task.value.dueDate.split('T')[0] : null
   await commentsStore.fetch(task.value.id)
   await loadLinks()
@@ -427,11 +448,12 @@ async function saveTask() {
   editingTitle.value = false
   editingDesc.value  = false
   await tasksStore.update(task.value.id, {
-    title:       editForm.title,
-    description: editForm.description,
-    priority:    editForm.priority,
-    stageId:     task.value.stageId,
-    dueDate:     editForm.dueDate ? new Date(editForm.dueDate).toISOString() : null
+    title:            editForm.title,
+    description:      editForm.description,
+    priority:         editForm.priority,
+    stageId:          task.value.stageId,
+    dueDate:          editForm.dueDate ? new Date(editForm.dueDate).toISOString() : null,
+    assignedUserId:   editForm.assignedUserId ?? null
   })
   await load()
 }
