@@ -82,7 +82,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBoardsStore } from '@/stores/boards'
 import { useTasksStore } from '@/stores/tasks'
@@ -179,7 +179,7 @@ async function loadTasks() {
   try {
     let data
     if (selectedBoard.value) {
-      const res = await api.get(`/boards/${selectedBoard.value}/tasks`)
+      const res = await api.get(`/tasks/board/${selectedBoard.value}`)
       data = res.data
     } else {
       const res = await api.get('/tasks')
@@ -207,7 +207,7 @@ onMounted(async () => {
 })
 
 // При изменении выбранной доски перезагружаем задачи
-watch(selectedBoard, loadTasks)
+watch(() => selectedBoard.value, loadTasks)
 </script>
 
 <style scoped>
