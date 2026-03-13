@@ -11,6 +11,7 @@
       <nav class="sidebar-nav">
         <a class="nav-item" @click="router.push('/'); sidebarOpen = false"><span>⊞</span> Моя доска</a>
         <a class="nav-item" @click="router.push('/todo'); sidebarOpen = false"><span>✓</span> ToDo</a>
+        <a class="nav-item" @click="router.push('/calendar'); sidebarOpen = false"><span>📅</span> Календарь</a>
         <a class="nav-item" @click="router.push('/friends'); sidebarOpen = false">
           <span>👥</span> Друзья
           <span v-if="friendsStore.requestsCount > 0" class="nav-badge">{{ friendsStore.requestsCount }}</span>
@@ -53,6 +54,9 @@
           <div class="header-actions">
             <button v-if="isAdmin" class="btn btn-ghost" @click="showSettings = true">⚙ Настройки</button>
             <button v-if="isAdmin" class="btn btn-ghost" @click="showStagesModal = true">◈ Этапы</button>
+            <button class="btn btn-ghost" @click="showOnlyMyTasks = !showOnlyMyTasks" :class="{ active: showOnlyMyTasks }">
+              {{ showOnlyMyTasks ? '👤 Все задачи' : '👤 Мои задачи' }}
+            </button>
             <button class="btn btn-primary" @click="showTaskModal = true">+ Задача</button>
           </div>
         </header>
@@ -64,12 +68,12 @@
               <div class="lane-title-row">
                 <span class="lane-dot" style="background:#6b7280"></span>
                 <span class="lane-name">Без этапа</span>
-                <span class="lane-count">{{ boardTasks.filter(t => !t.stageId).length }}</span>
+                <span class="lane-count">{{ filteredTasks.filter(t => !t.stageId).length }}</span>
               </div>
             </div>
             <draggable
               class="lane-cards"
-              :list="boardTasks.filter(t => !t.stageId)"
+              :list="filteredTasks.filter(t => !t.stageId)"
               group="tasks"
               item-key="id"
               @change="onDragEnd($event, null)"
@@ -85,7 +89,7 @@
                 />
               </template>
               <template #footer>
-                <div v-if="boardTasks.filter(t => !t.stageId).length === 0 && !isDragging" class="lane-empty">
+                <div v-if="filteredTasks.filter(t => !t.stageId).length === 0 && !isDragging" class="lane-empty">
                   Перетащите задачу сюда
                 </div>
               </template>
@@ -103,13 +107,14 @@
               <div class="lane-title-row">
                 <span class="lane-dot" :style="`background:${stage.color}`"></span>
                 <span class="lane-name">{{ stage.name }}</span>
-                <span class="lane-count">{{ boardTasks.filter(t => t.stageId === stage.id).length }}</span>
+                <span class="lane-count">{{ filteredTasks.filter(t => t.stageId === stage.id).length }}</span>
+                <span v-if="stage.isFinal" class="lane-final">завершающий</span>
               </div>
               <div class="lane-line" :style="`background:${stage.color}`"></div>
             </div>
             <draggable
               class="lane-cards"
-              :list="boardTasks.filter(t => t.stageId === stage.id)"
+              :list="filteredTasks.filter(t => t.stageId === stage.id)"
               group="tasks"
               item-key="id"
               @change="onDragEnd($event, stage.id)"
@@ -125,7 +130,7 @@
                 />
               </template>
               <template #footer>
-                <div v-if="boardTasks.filter(t => t.stageId === stage.id).length === 0 && !isDragging" class="lane-empty">
+                <div v-if="filteredTasks.filter(t => t.stageId === stage.id).length === 0 && !isDragging" class="lane-empty">
                   Перетащите задачу сюда
                 </div>
               </template>
@@ -278,6 +283,7 @@ const showCreateBoard = ref(false)
 const newBoardName = ref('')
 const selectedFriend = ref(null)
 const newStage = ref({ name: '', color: '#5b7fff' })
+const showOnlyMyTasks = ref(false)
 
 const currentBoardId = computed(() => parseInt(route.params.id))
 const board = computed(() => boardsStore.current)
@@ -285,6 +291,12 @@ const boardStages = computed(() => boardsStore.currentStages)
 const boardTasks = computed(() => boardsStore.currentTasks)
 const boardMembers = computed(() => board.value?.members ?? [])
 const isAdmin = computed(() => board.value?.myRole === 'Admin')
+
+const filteredTasks = computed(() => {
+  if (!showOnlyMyTasks.value) return boardTasks.value
+  const myId = authStore.userId
+  return boardTasks.value.filter(t => t.assignedUserId === myId)
+})
 
 const availableFriends = computed(() => {
   const memberIds = new Set(boardMembers.value.map(m => m.userId))
@@ -317,7 +329,17 @@ async function onDragEnd(evt, targetStageId) {
   if (!element) return
   const task = boardTasks.value.find(t => t.id === element.id)
   if (task) task.stageId = targetStageId
+
   await boardsStore.changeStage(element.id, targetStageId)
+
+  const targetStage = boardStages.value.find(s => s.id === targetStageId)
+  if (targetStage?.isFinal && !element.isDone) {
+    await api.patch(`/tasks/${element.id}/done`)
+  }
+  if (!targetStage && element.isDone || (targetStage && !targetStage.isFinal && element.isDone)) {
+    await api.patch(`/tasks/${element.id}/done`)
+  }
+
   await boardsStore.fetchTasks(currentBoardId.value)
 }
 
@@ -373,6 +395,7 @@ async function createBoard() {
 </script>
 
 <style scoped>
+.lane-final { font-size: 10px; color: var(--muted); margin-left: 4px; }
 .board-layout { display: flex; min-height: 100vh; }
 .sidebar { width: 230px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 28px 16px; position: sticky; top: 0; height: 100vh; flex-shrink: 0; z-index: 100; overflow-y: auto; }
 .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 8px; margin-bottom: 36px; }

@@ -68,6 +68,7 @@ public class StagesController : ControllerBase
 
         stage.Name = updated.Name;
         stage.Color = updated.Color;
+        stage.IsFinal = updated.IsFinal;
         await _db.SaveChangesAsync();
         return Ok(stage);
     }

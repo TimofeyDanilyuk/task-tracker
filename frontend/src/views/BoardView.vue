@@ -12,6 +12,7 @@
         <a class="nav-item active"><span>⊞</span> Моя доска</a>
         <a class="nav-item" @click="showStagesModal = true; sidebarOpen = false"><span>◈</span> Этапы</a>
         <a class="nav-item" @click="router.push('/todo'); sidebarOpen = false"><span>✓</span> ToDo</a>
+        <a class="nav-item" @click="router.push('/calendar'); sidebarOpen = false"><span>📅</span> Календарь</a>
         <a class="nav-item" @click="router.push('/friends'); sidebarOpen = false">
           <span>👥</span> Друзья
           <span v-if="friendsStore.requestsCount > 0" class="nav-badge">{{ friendsStore.requestsCount }}</span>
@@ -99,6 +100,7 @@
               <span class="lane-dot" :style="`background:${stage.color}`"></span>
               <span class="lane-name">{{ stage.name }}</span>
               <span class="lane-count">{{ tasks.filter(t => t.stageId === stage.id).length }}</span>
+              <span v-if="stage.isFinal" class="lane-final">завершающий</span>
             </div>
             <div class="lane-line" :style="`background:${stage.color}`"></div>
           </div>
@@ -219,7 +221,17 @@ async function onDragEnd(evt, targetStageId) {
   if (!element) return
   const task = tasks.value.find(t => t.id === element.id)
   if (task) task.stageId = targetStageId
+
   await tasksStore.changeStage(element.id, targetStageId)
+
+  const targetStage = stages.value.find(s => s.id === targetStageId)
+  if (targetStage?.isFinal && !element.isDone) {
+    await tasksStore.toggleDone(element.id)
+  }
+  if (!targetStage && element.isDone || (targetStage && !targetStage.isFinal && element.isDone)) {
+    await tasksStore.toggleDone(element.id)
+  }
+
   await tasksStore.fetch(false)
 }
 
@@ -287,6 +299,7 @@ function onTaskCreated() {
 .empty-icon { font-size: 48px; opacity: .3; }
 .empty-state { text-align: center; padding: 80px; color: var(--muted); }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+.lane-final { font-size: 10px; color: var(--muted); margin-left: 4px; }
 
 @media (max-width: 768px) {
   .hamburger { display: flex; }

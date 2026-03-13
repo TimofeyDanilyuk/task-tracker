@@ -209,7 +209,10 @@
 
           <div class="meta-edit" v-if="boardMembers.length">
             <label>Ответственный</label>
-            <select v-model="editForm.assignedUserId" @change="saveTask">
+            <div v-if="!isBoardAdmin" class="meta-row">
+              <span class="meta-muted">{{ assignedUserName || '— Не назначен —' }}</span>
+            </div>
+            <select v-else v-model="editForm.assignedUserId" @change="saveTask">
               <option :value="null">— Не назначен —</option>
               <option v-for="m in boardMembers" :key="m.userId" :value="m.userId">
                 {{ m.username }}
@@ -361,6 +364,8 @@ const newSubComment = ref('')
 
 const boardsStore = useBoardsStore()
 const boardMembers = ref([])
+const boardRole = ref(null)
+const isBoardAdmin = ref(false)
 
 const priorities = ['Критичный', 'Высокий', 'Средний', 'Низкий', 'Минимум']
 const priorityColors = ['#f87171','#fb923c','#facc15','#34d399','#6b7280']
@@ -372,6 +377,14 @@ const currentStage  = computed(() => stages.value.find(s => s.id === task.value?
 const priorityLabel = computed(() => priorities[((task.value?.priority ?? editForm.priority) ?? 3) - 1])
 const priorityColor = computed(() => priorityColors[((task.value?.priority ?? editForm.priority) ?? 3) - 1])
 const isOverdue     = computed(() => task.value?.dueDate && new Date(task.value.dueDate) < new Date())
+const assignedUserName = computed(() => {
+  if (task.value?.assignedUser) return task.value.assignedUser.username
+  if (task.value?.assignedUserId && boardMembers.value.length) {
+    const member = boardMembers.value.find(m => m.userId === task.value.assignedUserId)
+    return member?.username || '—'
+  }
+  return null
+})
 
 // Связанные задачи
 const linkedTasks = ref([])
@@ -431,6 +444,8 @@ async function load() {
       members.unshift({ userId: data.owner.id, username: data.owner.username })
     }
     boardMembers.value = members
+    boardRole.value = data.myRole
+    isBoardAdmin.value = data.isOwner || data.myRole === 'Admin'
   }
 
   if (!task.value) return
@@ -679,7 +694,6 @@ label { font-size: 13px; color: var(--muted); margin-bottom: 8px; display: block
 .btn.sm { padding: 6px 12px; font-size: 12px; }
 
 /* Правая колонка */
-.tv-sidebar {}
 .meta-card {
   background: var(--surface);
   border: 1px solid var(--border);

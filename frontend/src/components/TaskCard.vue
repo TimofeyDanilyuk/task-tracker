@@ -51,7 +51,9 @@ const priorities = [
 
 const priorityLabel = computed(() => priorities[(props.task?.priority ?? 3) - 1]?.label ?? '—')
 const priorityColor = computed(() => priorities[(props.task?.priority ?? 3) - 1]?.color ?? '#6b7280')
-const isOverdue = computed(() => props.task?.dueDate && new Date(props.task.dueDate) < new Date())
+const isOverdue = computed(() => 
+  !props.task?.isDone && props.task?.dueDate && new Date(props.task.dueDate) < new Date()
+)
 
 function formatDate(d) {
   if (!d) return '—'

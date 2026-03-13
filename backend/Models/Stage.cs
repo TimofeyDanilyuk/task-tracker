@@ -5,6 +5,7 @@ public class Stage
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Color { get; set; } = "#3498db";
+    public bool IsFinal { get; set; } = false;
     public int? UserId { get; set; }
     public int? BoardId { get; set; }
     public Board? Board { get; set; }

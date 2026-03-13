@@ -5,6 +5,7 @@ import TodoView from '@/views/TodoView.vue'
 import AuthView from '@/views/AuthView.vue'
 import FriendsView from '@/views/FriendsView.vue'
 import SharedBoardView from '@/views/SharedBoardView.vue'
+import CalendarView from '@/views/CalendarView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -14,7 +15,8 @@ const router = createRouter({
     { path: '/task/:id', component: TaskView, meta: { auth: true } },
     { path: '/todo', component: TodoView, meta: { auth: true } },
     { path: '/friends', component: FriendsView, meta: { auth: true } },
-    { path: '/board/:id', component: SharedBoardView, meta: { auth: true } }
+    { path: '/board/:id', component: SharedBoardView, meta: { auth: true } },
+    { path: '/calendar', component: CalendarView, meta: { auth: true } }
   ]
 })
 
