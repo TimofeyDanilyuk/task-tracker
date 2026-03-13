@@ -295,6 +295,7 @@ const isAdmin = computed(() => board.value?.myRole === 'Admin')
 const filteredTasks = computed(() => {
   if (!showOnlyMyTasks.value) return boardTasks.value
   const myId = authStore.userId
+  console.log('Filtering my tasks, myId:', myId, 'tasks:', boardTasks.value.map(t => ({ id: t.id, assignedUserId: t.assignedUserId })))
   return boardTasks.value.filter(t => t.assignedUserId === myId)
 })
 

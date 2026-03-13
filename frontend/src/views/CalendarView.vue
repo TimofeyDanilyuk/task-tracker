@@ -48,7 +48,7 @@
           <div v-if="hoverDay === day.date && day.tasks.length" class="day-tooltip">
             <div v-for="task in day.tasks" :key="task.id" class="tooltip-task">
               <span class="tooltip-priority" :style="`background: ${getPriorityColor(task.priority)}`"></span>
-              <span class="tooltip-title">{{ task.title }}</span>
+              <span class="tooltip-title">#{{ task.id }} – {{ task.title }}</span>
               <span class="tooltip-board" v-if="task.boardName">({{ task.boardName }})</span>
             </div>
           </div>
@@ -340,17 +340,21 @@ watch(() => selectedBoard.value, loadTasks)
   padding: 10px;
   z-index: 100;
   min-width: 200px;
+  max-width: 300px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
   gap: 6px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .tooltip-task {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   font-size: 13px;
+  line-height: 1.3;
 }
 
 .tooltip-priority {
@@ -358,18 +362,20 @@ watch(() => selectedBoard.value, loadTasks)
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+  margin-top: 4px;
 }
 
 .tooltip-title {
   flex: 1;
+  white-space: normal;
+  word-break: break-word;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .tooltip-board {
   font-size: 11px;
   color: var(--muted);
+  flex-shrink: 0;
 }
 
 .calendar-legend {
@@ -421,6 +427,20 @@ watch(() => selectedBoard.value, loadTasks)
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
+  }
+
+  .day-tooltip {
+    max-width: 250px;
+    min-width: 150px;
+    padding: 8px;
+  }
+
+  .tooltip-task {
+    font-size: 12px;
+  }
+
+  .tooltip-title {
+    word-break: break-all;
   }
 }
 </style>
